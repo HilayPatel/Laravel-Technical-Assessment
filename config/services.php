@@ -34,5 +34,11 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    'shopify' => [
+        'shop_domain' => env('SHOPIFY_SHOP_DOMAIN'),
+        'access_token' => env('SHOPIFY_ADMIN_ACCESS_TOKEN'),
+        'api_version' => env('SHOPIFY_API_VERSION', '2024-04'),
+        'default_collection_id' => env('SHOPIFY_DEFAULT_COLLECTION_ID'),
+    ],
 
 ];
