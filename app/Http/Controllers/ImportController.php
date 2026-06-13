@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Upload;
+use App\Models\Product;
 use App\Jobs\ProcessCsvImport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -11,14 +12,21 @@ class ImportController extends Controller
 {
     public function index()
     {
+        $products = Product::with('importRecord')->latest()->get();
+
+        return view('dashboard', compact('products'));
+    }
+
+    public function upload()
+    {
         $uploads = Upload::withCount(['records as successful_count' => function ($query) {
             $query->where('status', 'successful');
         }])->latest()->get();
 
-        return view('dashboard', compact('uploads'));
+        return view('upload', compact('uploads'));
     }
 
-    public function upload(Request $request)
+    public function postUpload(Request $request)
     {
         $request->validate([
             'csv_file' => 'required|file|mimes:csv,txt|max:10240', // Max 10MB file validation

@@ -29,23 +29,23 @@
                     </a>
                     <ul class="nav nav-treeview">
                         <li class="nav-item">
-                            <a href="./index.html" class="nav-link">
+                            <a href="{{ route('dashboard') }}" class="nav-link">
                                 <i class="nav-icon bi bi-circle"></i>
-                                <p>Dashboard</p>
+                                <p>Product List</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="./index2.html" class="nav-link">
+                            <a href="{{ route('upload') }}" class="nav-link">
                                 <i class="nav-icon bi bi-circle"></i>
                                 <p>Upload</p>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a href="./index3.html" class="nav-link active">
+                        {{-- <li class="nav-item">
+                            <a href="{{ route('logs') }}" class="nav-link active">
                                 <i class="nav-icon bi bi-circle"></i>
                                 <p>Logs</p>
                             </a>
-                        </li>
+                        </li> --}}
                     </ul>
                 </li>
             </ul>

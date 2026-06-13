@@ -61,25 +61,25 @@ Add this array to expose your environment values to the app:
 ## Installation & Running Locally
 
     1. Install project dependencies:
-    ```php
+    
         composer install
-    ```
+    
     2. Run the tracking migrations to build the tables:
-    ```php
+    
         php artisan migrate
-    ```
+    
 
     3. Link the public storage directory for file uploads:
-    ```php
+    
         php artisan storage:link
-    ```
+    
 
     4. Boot the local server:
-    ```php
+    
         php artisan serve
-    ```
+    
 
     5. In a separate terminal tab, boot the background worker to process the incoming files:
-    ```php
+    
         php artisan queue:work --queue=default --tries=3
-    ```
+    
