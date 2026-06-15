@@ -22,8 +22,7 @@ class ProcessCsvImport implements ShouldQueue
 
     public function handle(): void
     {
-        \Log::info("ProcessCsvImport started execution for Upload ID: " . $this->upload->id);
-
+        add_log($this->upload->id, 'info', "ProcessCsvImport started execution for Upload ID: " . $this->upload->id);
         $this->upload->update(['status' => 'processing']);
         $filePath = Storage::path($this->upload->file_path);
 
@@ -33,12 +32,12 @@ class ProcessCsvImport implements ShouldQueue
             $records = $csv->getRecords();
 
             $this->upload->update(['total_rows' => iterator_count($records)]);
-            \Log::info("Total parsed rows calculated: " . $this->upload->total_rows);
+            add_log($this->upload->id, 'info', "Total parsed rows calculated: " . $this->upload->total_rows);
 
             $targetCollectionId = config('services.shopify.default_collection_id');
 
             foreach ($csv->getRecords() as $row) {
-                \Log::debug("Processing single entry for SKU: " . ($row['Variant SKU'] ?? 'N/A'));
+                add_log($this->upload->id, 'debug', "Processing single entry for SKU: " . ($row['Variant SKU'] ?? 'N/A'));
 
                 $importRecord = ImportRecord::create([
                     'upload_id'    => $this->upload->id,
@@ -80,16 +79,16 @@ class ProcessCsvImport implements ShouldQueue
             }
 
             $this->upload->update(['status' => 'completed']);
-            \Log::info("ProcessCsvImport successfully completed for Upload ID: " . $this->upload->id);
+            add_log($this->upload->id, 'info', "ProcessCsvImport successfully completed for Upload ID: " . $this->upload->id);
         } catch (\Exception $e) {
             $this->upload->update(['status' => 'failed']);
-            \Log::critical("CSV background process failed on row generation: " . $e->getMessage());
+            add_log($this->upload->id, 'critical', "CSV background process failed on row generation: " . $e->getMessage());
         }
     }
 
     protected function uploadToShopifyGraphQL(ImportRecord $record, Product $product): void
     {
-        \Log::info("Starting sync cycle for Product: " . $product->title);
+        add_log($this->upload->id, 'info', "Starting sync cycle for Product: " . $product->title);
         $record->update(['status' => 'processing']);
 
         $shop = config('services.shopify.shop_domain');
@@ -100,7 +99,7 @@ class ProcessCsvImport implements ShouldQueue
         $variantId = null;
 
         if (!empty($product->handle)) {
-            \Log::info("Checking if product with handle already exists: " . $product->handle);
+            add_log($this->upload->id, 'info', "Checking if product with handle already exists: " . $product->handle);
 
             $findQuery = 'query getProductByHandle($query: String!) {
                 products(first: 1, query: $query) {
@@ -134,16 +133,16 @@ class ProcessCsvImport implements ShouldQueue
                 if ($productEdge) {
                     $existingProductId = $productEdge['id'];
                     $variantId = $productEdge['variants']['edges'][0]['node']['id'] ?? null;
-                    \Log::info("Match found on Shopify. Product ID: {$existingProductId}, Variant ID: {$variantId}");
+                    add_log($this->upload->id, 'info', "Match found on Shopify. Product ID: {$existingProductId}, Variant ID: {$variantId}");
                 }
             } catch (\Exception $e) {
-                \Log::error("Failed to check existing product handle lookup: " . $e->getMessage());
+                add_log($this->upload->id, 'error', "Failed to check existing product handle lookup: " . $e->getMessage());
             }
         }
 
         try {
             if ($existingProductId) {
-                \Log::info("Executing update pipeline for Shopify Product ID: " . $existingProductId);
+                add_log($this->upload->id, 'info', "Executing update pipeline for Shopify Product ID: " . $existingProductId);
 
                 $productMutation = 'mutation productUpdate($product: ProductInput!) {
                     productUpdate(input: $product) {
@@ -173,12 +172,12 @@ class ProcessCsvImport implements ShouldQueue
 
                 if (!empty($result['data']['productUpdate']['userErrors'])) {
                     $errorMsg = $result['data']['productUpdate']['userErrors'][0]['message'];
-                    \Log::warning("Shopify productUpdate validation failed: " . $errorMsg);
+                    add_log($this->upload->id, 'warning', "Shopify productUpdate validation failed: " . $errorMsg);
                     $record->update(['status' => 'failed', 'error_message' => $errorMsg]);
                     return;
                 }
             } else {
-                \Log::info("Executing creation pipeline for new product.");
+                add_log($this->upload->id, 'info', "Executing creation pipeline for new product.");
 
                 $productMutation = 'mutation productCreate($product: ProductCreateInput!) {
                     productCreate(input: $product) {
@@ -211,13 +210,13 @@ class ProcessCsvImport implements ShouldQueue
                 $result = $response->json();
                 if (!empty($result['data']['productCreate']['userErrors'])) {
                     $errorMsg = $result['data']['productCreate']['userErrors'][0]['message'];
-                    \Log::warning("Shopify productCreate validation failed: " . $errorMsg);
+                    add_log($this->upload->id, 'warning', "Shopify productCreate validation failed: " . $errorMsg);
                     $record->update(['status' => 'failed', 'error_message' => $errorMsg]);
                     return;
                 }
                 $shopifyProduct = $result['data']['productCreate']['product'] ?? null;
                 if (!$shopifyProduct) {
-                    \Log::warning("Shopify payload structural discrepancy caught during entity generation.");
+                    add_log($this->upload->id, 'warning', "Shopify payload structural discrepancy caught during entity generation.");
                     $record->update(['status' => 'failed', 'error_message' => 'Shopify returned an empty product creation response.']);
                     return;
                 }
@@ -225,24 +224,24 @@ class ProcessCsvImport implements ShouldQueue
                 $variantId = $shopifyProduct['variants']['edges'][0]['node']['id'] ?? null;
             }
             if (!$variantId) {
-                \Log::warning("No default structural variant reference found or returned.");
+                add_log($this->upload->id, 'warning', "No default structural variant reference found or returned.");
                 $record->update(['status' => 'failed', 'error_message' => 'Unable to resolve product variant identity context.']);
                 return;
             }
-            \Log::info("Updating variant properties for Identity: " . $variantId);
+            add_log($this->upload->id, 'info', "Updating variant properties for Identity: " . $variantId);
             $variantUpdateQuery = 'mutation productVariantUpdate($input: ProductVariantInput!) {productVariantUpdate(input: $input) {userErrors { field message }}}';
             $variantVariables = ['input' => ['id' => $variantId, 'sku' => $product->variant_sku ?? '', 'price' => (string)$product->variant_price, 'compareAtPrice' => $product->variant_compare_at_price ? (string)$product->variant_compare_at_price : null, 'requiresShipping' => $product->variant_requires_shipping, 'taxable' => $product->variant_taxable, 'inventoryPolicy' => !empty($product->variant_inventory_policy) ? strtoupper($product->variant_inventory_policy) : 'DENY', 'weight' => ['value' => (float)$product->variant_weight, 'unit' => strtoupper($product->variant_weight_unit ?? 'KG')]]];
             Http::withHeaders(['X-Shopify-Access-Token' => $token, 'Content-Type' => 'application/json',])->post($endpoint, ['query' => $variantUpdateQuery, 'variables' => $variantVariables]);
             if ($product->collection_id) {
-                \Log::info("Attaching item to Collection GID context: " . $product->collection_id);
+                add_log($this->upload->id, 'info', "Attaching item to Collection GID context: " . $product->collection_id);
                 $collectionQuery = 'mutation collectionAddProducts($id: ID!, $productIds: [ID!]!) {collectionAddProducts(id: $id, productIds: $productIds) {userErrors { field message }}}';
                 $collectionVariables = ['id' => $product->collection_id, 'productIds' => [$existingProductId]];
                 Http::withHeaders(['X-Shopify-Access-Token' => $token, 'Content-Type' => 'application/json',])->post($endpoint, ['query' => $collectionQuery, 'variables' => $collectionVariables]);
             }
             $record->update(['status' => 'successful', 'error_message' => null]);
-            \Log::info("Completed single transaction execution upsert path cleanly.");
+            add_log($this->upload->id, 'info', "Completed single transaction execution upsert path cleanly.");
         } catch (\Exception $e) {
-            \Log::critical("GraphQL sync routine caught structural failure: " . $e->getMessage());
+            add_log($this->upload->id, 'critical', "GraphQL sync routine caught structural failure: " . $e->getMessage());
             $record->update(['status' => 'failed', 'error_message' => 'GraphQL sequence failure: ' . $e->getMessage()]);
         }
     }

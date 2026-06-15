@@ -39,14 +39,14 @@
                             @csrf
                             <div class="card-body">
                                 <div class="input-group mb-3">
-                                    <input type="file" class="form-control" id="inputGroupFile02" />
-                                    <label class="input-group-text" for="inputGroupFile02">Upload</label>
+                                    <input type="file" name="csv_file" class="form-control" id="csv_file" />
+                                    <label class="input-group-text" for="csv_file">Upload</label>
                                 </div>
                             </div>
                             <!--end::Body-->
                             <!--begin::Footer-->
                             <div class="card-footer">
-                                <button type="submit" class="btn btn-primary">Import</button>
+                                <input type="submit" class="btn btn-primary" value="Import Products" />
                             </div>
                             <!--end::Footer-->
                         </form>
@@ -70,6 +70,7 @@
                                         <th class="p-4">Queue Status</th>
                                         <th class="p-4">Total Rows</th>
                                         <th class="p-4">Uploaded At</th>
+                                        <th class="p-4">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -88,6 +89,10 @@
                                             </td>
                                             <td class="p-4">{{ $upload->total_rows }}</td>
                                             <td class="p-4">{{ $upload->created_at->format('M d, Y H:i') }}</td>
+                                            <td class="p-4">
+                                                <a href="{{ route('logs', $upload->id) }}" class="btn btn-info btn-sm">View
+                                                    Logs</a>
+                                            </td>
                                         </tr>
                                     @endforeach
                                 </tbody>

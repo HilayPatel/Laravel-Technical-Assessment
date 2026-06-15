@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('products', function (Blueprint $table) {
             $table->id();
             // Link to the import log track entry
-            $table->foreignId('import_record_id')->nullable()->constrained('import_records')->onDelete('set null');
+            $table->foreignId('import_record_id')->constrained('import_records')->onDelete('set null');
             $table->string('handle')->nullable()->index();
             $table->string('title')->nullable();
             $table->text('body_html')->nullable();

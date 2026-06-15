@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Upload;
 use App\Models\Product;
+use App\Models\Log;
 use App\Jobs\ProcessCsvImport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -45,5 +46,12 @@ class ImportController extends Controller
         ProcessCsvImport::dispatch($upload);
 
         return back()->with('success', 'File uploaded successfully! Processing started in the background.');
+    }
+
+    public function logs(int $id)
+    {
+        $logs = Log::where('upload_id', $id)->oldest()->get();
+
+        return view('logs', compact('logs'));
     }
 }

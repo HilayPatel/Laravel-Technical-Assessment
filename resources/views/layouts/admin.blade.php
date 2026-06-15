@@ -4,7 +4,7 @@
 
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>AdminLTE | Dashboard v3</title>
+    <title>Laravel Technical Assessment</title>
     <!--begin::Accessibility Meta Tags-->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
     <meta name="color-scheme" content="light dark" />
@@ -12,12 +12,10 @@
     <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
     <!--end::Accessibility Meta Tags-->
     <!--begin::Primary Meta Tags-->
-    <meta name="title" content="AdminLTE | Dashboard v3" />
-    <meta name="author" content="ColorlibHQ" />
-    <meta name="description"
-        content="AdminLTE is a Free Bootstrap 5 Admin Dashboard, 30 example pages using Vanilla JS. Fully accessible with WCAG 2.1 AA compliance." />
-    <meta name="keywords"
-        content="bootstrap 5, bootstrap, bootstrap 5 admin dashboard, bootstrap 5 dashboard, bootstrap 5 charts, bootstrap 5 calendar, bootstrap 5 datepicker, bootstrap 5 tables, bootstrap 5 datatable, vanilla js datatable, colorlibhq, colorlibhq dashboard, colorlibhq admin dashboard, accessible admin panel, WCAG compliant" />
+    <meta name="title" content="Laravel Technical Assessment" />
+    <meta name="author" content="Hilay patel" />
+    <meta name="description" content="Laravel Technical Assessment" />
+    <meta name="keywords" content="laravel, technical, assessment" />
     <!--end::Primary Meta Tags-->
     <!--begin::Accessibility Features-->
     <!-- Skip links will be dynamically added by accessibility.js -->
@@ -56,6 +54,33 @@
         <!--end::Sidebar-->
         <!--begin::App Main-->
         <main class="app-main">
+            @if (session('success'))
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <h5><i class="icon fas fa-check"></i> Success!</h5>
+                    <div>{{ session('success') }}</div>
+                    <!-- AdminLTE v4 / Bootstrap 5 closing markup -->
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+            @if (session('error'))
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <h5><i class="icon fas fa-ban"></i> Error!</h5>
+                    <div>{{ session('error') }}</div>
+                    <!-- AdminLTE v4 / Bootstrap 5 closing markup -->
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+
+            @if ($errors->any())
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <h5><i class="icon fas fa-ban"></i> Error!</h5>
+                    <ul>
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
             @yield('content')
         </main>
         <!--end::App Main-->

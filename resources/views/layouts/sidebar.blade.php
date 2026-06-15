@@ -40,12 +40,6 @@
                                 <p>Upload</p>
                             </a>
                         </li>
-                        {{-- <li class="nav-item">
-                            <a href="{{ route('logs') }}" class="nav-link active">
-                                <i class="nav-icon bi bi-circle"></i>
-                                <p>Logs</p>
-                            </a>
-                        </li> --}}
                     </ul>
                 </li>
             </ul>

@@ -42,8 +42,7 @@
                                         <th>Status</th>
                                         <th>Vendor</th>
                                         <th>Tags</th>
-                                        <th>Published</th>
-
+                                        <th>Created At</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -62,6 +61,11 @@
                                                 </span>
                                             </td>
                                             <td class="p-4">{{ $product->vendor }}</td>
+                                            <td class="p-4">
+                                                @foreach (explode(',', $product->tags) as $tag)
+                                                    <span class="badge text-bg-secondary">{{ $tag }}</span>
+                                                @endforeach
+                                            </td>
                                             <td class="p-4">
                                                 {{ $product->importRecord ? $product->importRecord->created_at->format('M d, Y H:i') : 'N/A' }}
                                             </td>

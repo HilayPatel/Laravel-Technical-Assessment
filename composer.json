@@ -10,7 +10,6 @@
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "league/csv": "^9.28",
-        "opcodesio/log-viewer": "^3.24",
         "shopify/shopify-api": "^6.1"
     },
     "require-dev": {
@@ -27,7 +26,10 @@
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
-        }
+        },
+        "files": [
+            "app/helpers.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {
