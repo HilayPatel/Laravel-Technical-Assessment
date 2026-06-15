@@ -22,7 +22,7 @@ class ProcessCsvImport implements ShouldQueue
 
     public function handle(): void
     {
-        add_log($this->upload->id, 'info', "ProcessCsvImport started execution for Upload ID: " . $this->upload->id);
+        add_log($this->upload->id, 'debug', "ProcessCsvImport started execution for Upload ID: " . $this->upload->id);
         $this->upload->update(['status' => 'processing']);
         $filePath = Storage::path($this->upload->file_path);
 
@@ -32,7 +32,7 @@ class ProcessCsvImport implements ShouldQueue
             $records = $csv->getRecords();
 
             $this->upload->update(['total_rows' => iterator_count($records)]);
-            add_log($this->upload->id, 'info', "Total parsed rows calculated: " . $this->upload->total_rows);
+            add_log($this->upload->id, 'debug', "Total parsed rows calculated: " . $this->upload->total_rows);
 
             $targetCollectionId = config('services.shopify.default_collection_id');
 
@@ -74,12 +74,11 @@ class ProcessCsvImport implements ShouldQueue
                     'image_position'             => !empty($row['Image Position']) ? (int)$row['Image Position'] : null,
                     'image_alt_text'             => $row['Image Alt Text'] ?? null,
                 ]);
-
                 $this->uploadToShopifyGraphQL($importRecord, $product);
             }
 
             $this->upload->update(['status' => 'completed']);
-            add_log($this->upload->id, 'info', "ProcessCsvImport successfully completed for Upload ID: " . $this->upload->id);
+            add_log($this->upload->id, 'debug', "ProcessCsvImport successfully completed for Upload ID: " . $this->upload->id);
         } catch (\Exception $e) {
             $this->upload->update(['status' => 'failed']);
             add_log($this->upload->id, 'critical', "CSV background process failed on row generation: " . $e->getMessage());
@@ -93,6 +92,7 @@ class ProcessCsvImport implements ShouldQueue
 
         $shop = config('services.shopify.shop_domain');
         $token = config('services.shopify.access_token');
+        $collection_id = config('services.shopify.default_collection_id');
         $endpoint = "https://{$shop}/admin/api/2026-04/graphql.json";
 
         $existingProductId = null;
@@ -167,7 +167,6 @@ class ProcessCsvImport implements ShouldQueue
                     'X-Shopify-Access-Token' => $token,
                     'Content-Type' => 'application/json',
                 ])->post($endpoint, ['query' => $productMutation, 'variables' => $productVariables]);
-
                 $result = $response->json();
 
                 if (!empty($result['data']['productUpdate']['userErrors'])) {
@@ -223,20 +222,30 @@ class ProcessCsvImport implements ShouldQueue
                 $existingProductId = $shopifyProduct['id'];
                 $variantId = $shopifyProduct['variants']['edges'][0]['node']['id'] ?? null;
             }
+
             if (!$variantId) {
                 add_log($this->upload->id, 'warning', "No default structural variant reference found or returned.");
                 $record->update(['status' => 'failed', 'error_message' => 'Unable to resolve product variant identity context.']);
                 return;
             }
+
             add_log($this->upload->id, 'info', "Updating variant properties for Identity: " . $variantId);
             $variantUpdateQuery = 'mutation productVariantUpdate($input: ProductVariantInput!) {productVariantUpdate(input: $input) {userErrors { field message }}}';
             $variantVariables = ['input' => ['id' => $variantId, 'sku' => $product->variant_sku ?? '', 'price' => (string)$product->variant_price, 'compareAtPrice' => $product->variant_compare_at_price ? (string)$product->variant_compare_at_price : null, 'requiresShipping' => $product->variant_requires_shipping, 'taxable' => $product->variant_taxable, 'inventoryPolicy' => !empty($product->variant_inventory_policy) ? strtoupper($product->variant_inventory_policy) : 'DENY', 'weight' => ['value' => (float)$product->variant_weight, 'unit' => strtoupper($product->variant_weight_unit ?? 'KG')]]];
             Http::withHeaders(['X-Shopify-Access-Token' => $token, 'Content-Type' => 'application/json',])->post($endpoint, ['query' => $variantUpdateQuery, 'variables' => $variantVariables]);
-            if ($product->collection_id) {
-                add_log($this->upload->id, 'info', "Attaching item to Collection GID context: " . $product->collection_id);
+
+            if ($collection_id) {
+                add_log($this->upload->id, 'info', "Attaching item to Collection GID context: " . $collection_id);
                 $collectionQuery = 'mutation collectionAddProducts($id: ID!, $productIds: [ID!]!) {collectionAddProducts(id: $id, productIds: $productIds) {userErrors { field message }}}';
-                $collectionVariables = ['id' => $product->collection_id, 'productIds' => [$existingProductId]];
-                Http::withHeaders(['X-Shopify-Access-Token' => $token, 'Content-Type' => 'application/json',])->post($endpoint, ['query' => $collectionQuery, 'variables' => $collectionVariables]);
+                $collectionVariables = ['id' => $collection_id, 'productIds' => [$existingProductId]];
+                $collectionResponse = Http::withHeaders(['X-Shopify-Access-Token' => $token, 'Content-Type' => 'application/json',])->post($endpoint, ['query' => $collectionQuery, 'variables' => $collectionVariables]);
+                $collectionResult = $collectionResponse->json();
+                if (!empty($collectionResult['data']['collectionAddProducts']['userErrors'])) {
+                    $errorMsg = $collectionResult['data']['collectionAddProducts']['userErrors'][0]['message'];
+                    add_log($this->upload->id, 'warning', "Shopify collectionAddProducts failed: " . $errorMsg);
+                } else {
+                    add_log($this->upload->id, 'info', "Product successfully attached to collection context.");
+                }
             }
             $record->update(['status' => 'successful', 'error_message' => null]);
             add_log($this->upload->id, 'info', "Completed single transaction execution upsert path cleanly.");

@@ -1,7 +1,9 @@
 ------------------------------
-## Shopify CSV Importer (Laravel 12)
-An asynchronous background processing pipeline that takes a standard 21-column Shopify Product CSV and syncs it to a Shopify store via the Admin GraphQL API (v2026-04).
+## Shopify CSV Importer
+An asynchronous background processing pipeline that takes Shopify Product CSV and syncs it to a Shopify store via the Admin GraphQL API (v2026-04).
 It automatically runs handle-based upsert checks to decide whether to create or update products, links them to a specified collection, and logs errors row-by-row.
+
+
 ## System Features
 
 * Asynchronous Execution: Heavy CSV parsing and sequential network requests are offloaded to queue workers (ShouldQueue).
@@ -10,7 +12,16 @@ It automatically runs handle-based upsert checks to decide whether to create or 
 * Separated Log / Data Layer: import_records acts as an operational runtime audit log while products holds the normalized, parsed fields.
 
 ------------------------------
-## DB Schema Layout## 1. uploads
+## Technical Stack
+* **Framework:** Laravel 12
+* **Admin Penel:** AdminLTE 4.0
+* **Version Control:** Git (GitHub Desktop)
+* **Database Management:** SQLyog
+* **IDE:** VS Code
+
+------------------------------
+## DB Schema Layout
+## 1. uploads
 Stores metadata for each uploaded file batch.
 
 * file_name (string)
@@ -37,6 +48,13 @@ The parsed and normalized product data.
 * Variant info: variant_sku, variant_price, variant_compare_at_price, variant_requires_shipping, variant_taxable, variant_inventory_tracker, variant_inventory_qty, variant_inventory_policy, variant_fulfillment_service, variant_weight, variant_weight_unit
 * Media: image_src, image_position, image_alt_text
 
+## 4. log
+Log all import events
+
+* upload_id (foreignId)
+* level (string) -> debug, info, warning, critical, error
+* message (string)
+
 ------------------------------
 ## Environment Setup## 1. .env Configuration
 ```php
@@ -60,26 +78,30 @@ Add this array to expose your environment values to the app:
 ------------------------------
 ## Installation & Running Locally
 
-    1. Install project dependencies:
-    
-        composer install
-    
-    2. Run the tracking migrations to build the tables:
-    
-        php artisan migrate
-    
+1. Install project dependencies:
 
-    3. Link the public storage directory for file uploads:
-    
-        php artisan storage:link
-    
+    composer install
 
-    4. Boot the local server:
-    
-        php artisan serve
-    
+2. Run the tracking migrations to build the tables:
 
-    5. In a separate terminal tab, boot the background worker to process the incoming files:
-    
-        php artisan queue:work --queue=default --tries=3
-    
+    php artisan migrate
+
+3. Link the public storage directory for file uploads:
+
+    php artisan storage:link
+
+4. Boot the local server:
+
+    php artisan serve
+
+5. In a separate terminal tab, boot the background worker to process the incoming files:
+
+    php artisan queue:work --queue=default --tries=3
+
+------------------------------
+## ⚠️ Known Issue: Missing Location ID & Restricted API Scopes
+
+### Problem Statement
+To update inventory levels in Shopify via the API, a valid `location_id` is strictly required. However, the integration faces a blocking issue under the following constraints:
+1. **No Admin Access:** The development team cannot log into the Shopify Admin Dashboard to manually grab the location URL.
+2. **Restricted API Token:** The assigned API access token lacks the `read_locations` permission scope, causing direct location API queries to fail.
