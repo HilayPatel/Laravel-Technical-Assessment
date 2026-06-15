@@ -60,10 +60,10 @@ Log all import events
 ```php
 QUEUE_CONNECTION=database
 
-SHOPIFY_SHOP_DOMAIN=://myshopify.com
-SHOPIFY_ADMIN_ACCESS_TOKEN=shpat_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+SHOPIFY_SHOP_DOMAIN=laravel-import-test.myshopify.com
+SHOPIFY_ADMIN_ACCESS_TOKEN=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
 SHOPIFY_API_VERSION=2026-04
-SHOPIFY_COLLECTION_ID=gid://shopify/Collection/123456789
+SHOPIFY_DEFAULT_COLLECTION_ID=gid://shopify/Collection/464337174767
 ```
 ## 2. config/services.php
 Add this array to expose your environment values to the app:
@@ -72,7 +72,7 @@ Add this array to expose your environment values to the app:
     'shop_domain' => env('SHOPIFY_SHOP_DOMAIN'),
     'access_token' => env('SHOPIFY_ADMIN_ACCESS_TOKEN'),
     'api_version' => env('SHOPIFY_API_VERSION', '2026-04'),
-    'default_collection_id' => env('SHOPIFY_COLLECTION_ID'),
+    'default_collection_id' => env('SHOPIFY_DEFAULT_COLLECTION_ID'),
 ],
 ```
 ------------------------------
